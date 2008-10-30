@@ -21302,9 +21302,11 @@ struct uct_node {
 
 #define TREE_SIZE 10000000
 struct uct_tree {
-  struct uct_node nodes[TREE_SIZE];
   unsigned int next_node;
+  struct uct_node nodes[TREE_SIZE];
 };
+
+struct uct_tree global_tree;
 
 unsigned int get_new_node(struct uct_tree *tree)
 {
@@ -21340,7 +21342,7 @@ double play_games(int state, int *visited_states, int depth,
   double logsize = 0.0;
   double child_logsize;
   int next_state;
-  struct uct_node *next_node;
+  struct uct_node *next_node = NULL;
   
   visited_states[state] = 1;
   for (k = 0; k < 2 * NUMBER_OF_POINTS; k++) {
@@ -21353,7 +21355,7 @@ double play_games(int state, int *visited_states, int depth,
   }
 
   if (number_valid_next_states > 0) {
-    if (!node) {
+    if (!node || node->n == 0) {
       k = random_choice(number_valid_next_states);
       next_state = valid_next_states[k];
       next_node = NULL;
@@ -21364,20 +21366,22 @@ double play_games(int state, int *visited_states, int depth,
 	if (!child_id) {
 	  node->first_child = get_new_node(tree);
 	  next_state = valid_next_states[0];
-	  next_node = NULL;
+	  next_node = &tree->nodes[node->first_child];
 	  if (number_valid_next_states == 1)
 	    node->state = FULLY_EXPANDED;
 	}
 	else {
+	  int next_node_id;
 	  for (k = 0; k < number_valid_next_states; k++) {
 	    if (tree->nodes[child_id].next_sibling == 0)
 	      break;
 	    child_id = tree->nodes[child_id].next_sibling;
 	  }
-	  tree->nodes[child_id].next_sibling = get_new_node(tree);
+	  next_node_id = get_new_node(tree);
+	  tree->nodes[child_id].next_sibling = next_node_id;
 	  next_state = valid_next_states[k + 1];
-	  next_node = NULL;
-	  if (k + 1 == number_valid_next_states)
+	  next_node = &tree->nodes[next_node_id];
+	  if (k + 2 == number_valid_next_states)
 	    node->state = FULLY_EXPANDED;
 	}
       }
@@ -21388,9 +21392,9 @@ double play_games(int state, int *visited_states, int depth,
 	for (k = 0; k < number_valid_next_states; k++) {
 	  struct uct_node *child = &tree->nodes[child_id];
 	  float n = (float) child->n;
-	  float conf = sqrt(2.0 * logf(p) / n);
+	  float conf = 20 * sqrt(2.0 * logf(p) / n);
 	  float uct_value = child->sum_length / n + conf;
-	  if (uct_value > best_uct_value && !child->state == SOLVED) {
+	  if (uct_value > best_uct_value && child->state != SOLVED) {
 	    best_uct_value = uct_value;
 	    next_state = valid_next_states[k];
 	    next_node = child;
@@ -21416,14 +21420,14 @@ double play_games(int state, int *visited_states, int depth,
       node->n++;
       node->sum_length += *length;
     }
+
     logsize = child_logsize + logs[number_valid_next_states];
     logsize += log(1 + exp(-logsize));
   }
   else {
     if (depth > max_depth)
       max_depth = depth;
-    if (depth > *length)
-      *length = depth;
+    *length = depth;
     depth_stats[depth]++;
   }
   
@@ -21441,8 +21445,8 @@ int main(int argc, char **argv)
   double logsum = 0.0;
   int length;
 
-  struct uct_tree tree;
-  
+  struct uct_tree *tree = &global_tree;
+
   gg_srand(6);
   
   for (k = 0; k < NUMBER_OF_STATES; k++)
@@ -21453,19 +21457,19 @@ int main(int argc, char **argv)
     logs[k] = log((double) k);
   }
 
-  tree.next_node = 0;
-  get_new_node(&tree);
+  tree->next_node = 0;
+  get_new_node(tree);
   
   max_depth = 0;
   
   for (j = 0; j < N; j++) {
-    logsize = play_games(0, visited_states, 1, &tree, tree.nodes, &length);
+    logsize = play_games(0, visited_states, 1, tree, tree->nodes, &length);
     if (logsize < logsum)
       logsum += log(1 + exp(logsize - logsum));
     else
       logsum = logsize + log(1 + exp(logsum - logsize));
     
-    if (j % 100000 == 99999)
+    if (j % 10000 == 9999)
       printf("%d %f (max_depth: %d)\n", j + 1,
 	     (float) (logsum - log(j + 1)) / log(2), max_depth);
   }
