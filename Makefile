@@ -1,3 +1,6 @@
+estimate_number_of_games_uct: estimate_number_of_games_uct.c random.o
+	gcc -o estimate_number_of_games_uct estimate_number_of_games_uct.c -O3 random.o -lm -Wall
+
 estimate_number_of_games_stratified2: estimate_number_of_games_stratified2.c random.o
 	gcc -o estimate_number_of_games_stratified2 estimate_number_of_games_stratified2.c -O3 random.o -lm -Wall
 
