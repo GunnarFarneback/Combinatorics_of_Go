@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "random.h"
 
 #if 0
@@ -21288,6 +21289,8 @@ unsigned int rr[2 * NUMBER_OF_POINTS + 1];
 double logs[2 * NUMBER_OF_POINTS + 1];
 int max_depth;
 unsigned int depth_stats[NUMBER_OF_STATES + 1];
+int path[NUMBER_OF_STATES + 1];
+int best_path[NUMBER_OF_STATES + 1];
 
 enum uct_node_state {NEW, FULLY_EXPANDED, SOLVED};
 
@@ -21345,6 +21348,7 @@ double play_games(int state, int *visited_states, int depth,
   struct uct_node *next_node = NULL;
   
   visited_states[state] = 1;
+  path[depth] = state;
   for (k = 0; k < 2 * NUMBER_OF_POINTS; k++) {
     next_state = transformations[state][k];
     if (next_state < 0)
@@ -21426,8 +21430,10 @@ double play_games(int state, int *visited_states, int depth,
     logsize += log(1 + exp(-logsize));
   }
   else {
-    if (depth > max_depth)
+    if (depth > max_depth) {
       max_depth = depth;
+      memcpy(best_path, path, sizeof(path));
+    }
     *length = depth;
     depth_stats[depth]++;
   }
@@ -21470,9 +21476,11 @@ int main(int argc, char **argv)
     else
       logsum = logsize + log(1 + exp(logsum - logsize));
     
-    if (j % 10000 == 9999)
+    if (j % 10000 == 9999) {
       printf("%d %f (max_depth: %d)\n", j + 1,
 	     (float) (logsum - log(j + 1)) / log(2), max_depth);
+      fflush(stdout);
+    }
   }
 
   printf("Game length distribution:\n");
@@ -21480,6 +21488,10 @@ int main(int argc, char **argv)
     if (depth_stats[k] > 0)
       printf("%5d: %7u\n", k, depth_stats[k]);
   
+  printf("Best path:\n");
+  for (k = 1; k <= max_depth; k++)
+    printf("%5d\n", best_path[k]);
+
   printf("\nLogsize: %f, max_depth: %d\n", (float) (logsum - log(N)) / log(2),
 	 max_depth);
   return 0;
