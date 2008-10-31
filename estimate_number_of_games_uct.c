@@ -114,7 +114,7 @@ int transformations[NUMBER_OF_STATES][2 * NUMBER_OF_POINTS] = {
 { 1,  0, -1, -1, -1, -1, -1, -1}, /* 40: .XXX */
 };
 #endif
-#if 1
+#if 0
 /* 2x2 */
 #define NUMBER_OF_STATES 57
 #define NUMBER_OF_POINTS 4
@@ -8600,7 +8600,7 @@ int transformations[NUMBER_OF_STATES][2 * NUMBER_OF_POINTS] = {
 { 1,  0, -1, -1, -1, -1, -1, -1}, /* 56: .XXX */
 };
 #endif
-#if 0
+#if 1
 /* 3x3 */
 #define NUMBER_OF_STATES 12675
 #define NUMBER_OF_POINTS 9
@@ -21347,8 +21347,9 @@ double play_games(int state, int *visited_states, int depth,
   visited_states[state] = 1;
   for (k = 0; k < 2 * NUMBER_OF_POINTS; k++) {
     next_state = transformations[state][k];
-    if (next_state >= 0
-	&& !visited_states[next_state]) {
+    if (next_state < 0)
+      break;
+    if (!visited_states[next_state]) {
       valid_next_states[number_valid_next_states] = next_state;
       number_valid_next_states++;
     }
@@ -21389,11 +21390,11 @@ double play_games(int state, int *visited_states, int depth,
 	float best_uct_value = 0.0;
 	int child_id = node->first_child;
 	float p = (float) node->n;
+	float q = 10 * sqrtf(2.0 * logf(p));
 	for (k = 0; k < number_valid_next_states; k++) {
 	  struct uct_node *child = &tree->nodes[child_id];
 	  float n = (float) child->n;
-	  float conf = 20 * sqrt(2.0 * logf(p) / n);
-	  float uct_value = child->sum_length / n + conf;
+	  float uct_value = child->sum_length / n + q / sqrtf(n);
 	  if (uct_value > best_uct_value && child->state != SOLVED) {
 	    best_uct_value = uct_value;
 	    next_state = valid_next_states[k];
