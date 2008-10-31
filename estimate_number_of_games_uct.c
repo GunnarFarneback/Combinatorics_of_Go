@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <float.h>
 #include "random.h"
 
 #if 0
@@ -21297,7 +21298,7 @@ enum uct_node_state {NEW, FULLY_EXPANDED, SOLVED};
 struct uct_node {
   unsigned int n;
   unsigned int sum_length;
-  double log_sum_games;    
+  double logsize;
   unsigned int first_child;
   unsigned int next_sibling;
   enum uct_node_state state;
@@ -21316,7 +21317,7 @@ unsigned int get_new_node(struct uct_tree *tree)
   struct uct_node *node = &tree->nodes[tree->next_node];
   node->n = 0;
   node->sum_length = 0;
-  node->log_sum_games = 0;
+  node->logsize = 0.0;
   node->first_child = 0;
   node->next_sibling = 0;
   node->state = NEW;
@@ -21421,13 +21422,15 @@ double play_games(int state, int *visited_states, int depth,
     else
       child_logsize = 0;
     
+    logsize = child_logsize + logs[number_valid_next_states];
+    logsize += log(1 + exp(-logsize));
+
     if (node) {
+      if (node->n == 0)
+	node->logsize = logsize;
       node->n++;
       node->sum_length += *length;
     }
-
-    logsize = child_logsize + logs[number_valid_next_states];
-    logsize += log(1 + exp(-logsize));
   }
   else {
     if (depth > max_depth) {
@@ -21451,11 +21454,12 @@ int main(int argc, char **argv)
   const int N = 10000000;
   double logsum = 0.0;
   int length;
+  long double number_of_games = 0;
 
   struct uct_tree *tree = &global_tree;
 
   gg_srand(6);
-  
+
   for (k = 0; k < NUMBER_OF_STATES; k++)
     visited_states[k] = 0;
 
@@ -21492,7 +21496,22 @@ int main(int argc, char **argv)
   for (k = 1; k <= max_depth; k++)
     printf("%5d\n", best_path[k]);
 
+  for (k = 0; k < tree->next_node; k++) {
+    struct uct_node *node = &tree->nodes[k];
+    if (node->state == FULLY_EXPANDED || node->state == SOLVED) {
+      int child_id = node->first_child;
+      number_of_games += 1.0;
+      while (child_id > 0) {
+	if (tree->nodes[child_id].state == NEW)
+	  number_of_games += expl((long double) tree->nodes[child_id].logsize);
+	child_id = tree->nodes[child_id].next_sibling;
+      }
+    }
+  }
+
   printf("\nLogsize: %f, max_depth: %d\n", (float) (logsum - log(N)) / log(2),
 	 max_depth);
+  printf("\nNumber of games: %Lf %Lg, max_depth: %d\n", number_of_games,
+	 number_of_games, max_depth);
   return 0;
 }
