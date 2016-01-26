@@ -8416,7 +8416,7 @@ int transformations[NUMBER_OF_STATES][2 * NUMBER_OF_POINTS] = {
 { 1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}, /* 312: .XXXXX */
 };
 #endif
-#if 0
+#if 1
 /* 1x5 */
 #define NUMBER_OF_STATES 113
 #define NUMBER_OF_POINTS 5
@@ -8602,7 +8602,7 @@ int transformations[NUMBER_OF_STATES][2 * NUMBER_OF_POINTS] = {
 { 1,  0, -1, -1, -1, -1, -1, -1}, /* 56: .XXX */
 };
 #endif
-#if 1
+#if 0
 /* 3x3 */
 #define NUMBER_OF_STATES 12675
 #define NUMBER_OF_POINTS 9
@@ -21395,7 +21395,7 @@ double play_games(int state, int *visited_states, int depth,
 	float best_uct_value = 0.0;
 	int child_id = node->first_child;
 	float p = (float) node->n;
-	float q = 10 * sqrtf(2.0 * logf(p));
+	float q = 110 * sqrtf(2.0 * logf(p));
 	for (k = 0; k < number_valid_next_states; k++) {
 	  struct uct_node *child = &tree->nodes[child_id];
 	  float n = (float) child->n;
