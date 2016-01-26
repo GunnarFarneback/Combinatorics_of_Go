@@ -1,0 +1,21 @@
+This repository contains code developed as part of the research on the
+number of legal positions in the game of go together with John Tromp
+in 2005. 
+
+Documentation of the results, including the published paper
+'Combinatorics of Go', can be found on Tromp's page at
+http://tromp.github.io/go/legal.html 
+
+In addition to computing the number of legal positions, here can also
+be found code for
+* estimating max number of games (included in 'Combinatorics of Go')
+* computing max number of liberties of a single string (unpublished)
+* computing max number of strings (unpublished)
+* computing max number of neighbor strings of a single string (unpublished)
+* computing max number of pseudoliberties of a single string (unpublished)
+
+All this code is provided as is with no guarantees of any kind. It has
+been more than 10 years since it was written.
+
+Linköping 2016-01-26
+Gunnar Farnebäck
